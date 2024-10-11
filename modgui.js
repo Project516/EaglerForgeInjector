@@ -8,7 +8,8 @@
     "https://github.com/EaglerForge",
     "hey you should check out https://github.com/ZXMushroom63/scratch-gui",
     "99% of people stop gambling before they win big.",
-    "Now with free estradiol!"
+    "Now with free estradiol!",
+    "Now with H.I.V (Hyper Injected Virtual-debugger)"
   ];
   var gui = `<div id="modapi_gui_container">
       <header>
@@ -54,6 +55,9 @@
         <p>
           Modloader linker by
           <a href="https://github.com/ZXMushroom63">ZXMushroom63</a>
+        </p>
+        <p>
+          API by <a href="https://github.com/ZXMushroom63">ZXMushroom63,</a> <a href="https://leah.chromebooks.lol">Leah Anderson,</a> and <a href="https://github.com/radmanplays">radmanplays</a>
         </p>
       </footer>
 

@@ -1,3 +1,5 @@
+globalThis.doEaglerforge = true;
+globalThis.optimizePi = true;
 function wait(ms) {
     return new Promise((resolve, reject) => {
         setTimeout(() => { resolve(); }, ms);
@@ -54,6 +56,11 @@ function entriesToStaticVariableProxy(entries, prefix) {
     return proxy;
 }
 async function processClasses(string) {
+    if (globalThis.doShronk) {
+        if (!confirm("The minify step is extremely slow, especially on lower-end devices, and can take upwards of 15 minutes.")) {
+            return;
+        }
+    }
     _status("Beginning patch process...");
     await wait(50);
     var patchedFile = string;
@@ -129,6 +136,29 @@ var main;(function(){`
             );
         }
     );
+    
+    if(globalThis.optimizePi){
+        patchedFile = patchedFile.replaceAll(
+            "3.1415927410125732 / 180.0",
+            "0.01745"
+        );
+
+        patchedFile = patchedFile.replaceAll(
+            "180.0 / 3.1415927410125732",
+            "57.2958"
+        );
+    
+        patchedFile = patchedFile.replaceAll(
+            "3.1415927410125732",
+            "3.14159"
+        );
+
+        patchedFile = patchedFile.replaceAll(
+            "0.01745329238474369",
+            "0.01745"
+        );
+    }
+    
     const extractInstanceMethodRegex =
         /^[\t ]*function \S+?_\S+?_\S+?\((\$this)?/gm; // /^[\t ]*function \S+?_\S+?_\S+?\(\$this/gm
     const extractInstanceMethodFullNameRegex = /function (\S*?)\(/gm; // /function (\S*?)\(\$this/gm
@@ -191,6 +221,8 @@ var main;(function(){`
     );
     //Edge cases. sigh
     //Done: add support for static properties on classes with constructors like this: function nmcg_GuiMainMenu() {
+
+    
     patchedFile = patchedFile.replaceAll(
         /function [a-z]+?_([a-zA-Z\$]+?)\(\) \{/gm,
         (match) => {
@@ -231,15 +263,24 @@ var main;(function(){`
         }
     );
 
-    _status("Applying async override...");
+    _status("Applying bonus patches from patch registry...");
     await wait(50);
+    patchedFile = PatchesRegistry.patchFile(patchedFile);
 
-    //patchedFile = await asyncify(patchedFile);
+    if (globalThis.doShronk) {
+        _status("Shrinking file...");
+        await wait(50);
+
+        patchedFile = await shronk(patchedFile);
+    }
+
+
     _status("Injecting scripts...");
     await wait(50);
     patchedFile = patchedFile.replace(
         ` id="game_frame">`,
         ` id="game_frame">
+    \<script id="modapi_patchesreg_events"\>${PatchesRegistry.getEventInjectorCode()};\<\/script\>
     \<script id="modapi_postinit"\>${globalThis.modapi_postinit}\<\/script\>
     \<script id="modapi_postinitasync"\>${globalThis.modapi_postinitasync}\<\/script\>
     \<script id="modapi_modloader"\>${globalThis.modapi_modloader}\<\/script\>
@@ -250,6 +291,7 @@ var main;(function(){`
     patchedFile = patchedFile.replaceAll(/main\(\);\s*?}/gm, (match) => {
         return match.replace("main();", "main();ModAPI.hooks._postInit();");
     });
+
     _status("Done, awaiting input...");
     await wait(50);
     return patchedFile;
@@ -268,8 +310,15 @@ document.querySelector("#giveme").addEventListener("click", () => {
     fileType = fileType[fileType.length - 1];
 
     file.text().then(async (string) => {
-        var patchedFile = await processClasses(string);
-        patchedFile.replace(`{"._|_libserverside_|_."}`)
+        var patchedFile = string;
+
+        if (globalThis.doEaglerforge) {
+            patchedFile = await processClasses(patchedFile);
+        } else if (globalThis.doShronk) {
+            patchedFile = await shronk(patchedFile);
+        }
+        
+        patchedFile.replace(`{"._|_libserverside_|_."}`, "");
         var blob = new Blob([patchedFile], { type: file.type });
         saveAs(blob, "processed." + fileType);
     });
@@ -288,7 +337,14 @@ document.querySelector("#givemeserver").addEventListener("click", () => {
     fileType = fileType[fileType.length - 1];
 
     file.text().then(async (string) => {
-        var patchedFile = await processClasses(string);
+        var patchedFile = string;
+        
+        if (globalThis.doEaglerforge) {
+            patchedFile = await processClasses(patchedFile);
+        } else if (globalThis.doShronk) {
+            patchedFile = await shronk(patchedFile);
+        }
+        
         patchedFile.replace(`{"._|_libserverside_|_."}`, `(${EFServer.toString()})()`);
         var blob = new Blob([patchedFile], { type: file.type });
         saveAs(blob, "efserver." + fileType);
